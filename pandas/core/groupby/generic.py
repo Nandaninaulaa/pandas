@@ -42,7 +42,11 @@ from pandas.core.dtypes.common import (
     is_numeric_dtype,
     is_scalar,
 )
-from pandas.core.dtypes.dtypes import CategoricalDtype
+from pandas.core.dtypes.dtypes import (
+    ArrowDtype,
+    BaseMaskedDtype,
+    CategoricalDtype,
+)
 from pandas.core.dtypes.inference import is_hashable
 from pandas.core.dtypes.missing import (
     isna,
@@ -981,8 +985,15 @@ class SeriesGroupBy(GroupBy[Series]):
         res = ensure_int64(res)
 
         ri = self._grouper.result_index
+        if isinstance(self.obj.dtype, ArrowDtype):
+            dtype = "int64[pyarrow]"
+        elif isinstance(self.obj.dtype, BaseMaskedDtype):
+            dtype = "Int64"
+        else:
+            dtype = None
+
         result: Series | DataFrame = self.obj._constructor(
-            res, index=ri, name=self.obj.name
+            res, index=ri, name=self.obj.name, dtype=dtype
         )
         if not self.as_index:
             result = self._insert_inaxis_grouper(result)
